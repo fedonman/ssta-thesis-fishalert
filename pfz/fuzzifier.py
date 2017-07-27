@@ -48,6 +48,10 @@ class Fuzzifier:
         if fishery is Fishery.Anchovy:
             self.outputParameter = 'anchovy'
             self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), 'anchovy')
+            self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
+            self.consequent['medium'] = fuzz.trapmf(self.consequent.universe, [20, 30, 50, 60])
+            self.consequent['high'] = fuzz.trapmf(self.consequent.universe, [50, 60, 80, 90])
+            self.consequent['extreme'] = fuzz.trapmf(self.consequent.universe, [80, 90, 100, 100])
             if season is Season.Summer:
                 self.usedParameters = ['depth', 'sst', 'sla']
                 
@@ -67,11 +71,6 @@ class Fuzzifier:
                 self.antecedents['sla']['ideal_1'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.14, -0.12, -0.06, -0.04])
                 self.antecedents['sla']['ideal_2'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.08, -0.06, -0.02, 0])
                 self.antecedents['sla']['high'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.02, 0, 1, 1])
-
-                self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
-                self.consequent['medium'] = fuzz.trapmf(self.consequent.universe, [20, 30, 50, 60])
-                self.consequent['high'] = fuzz.trapmf(self.consequent.universe, [50, 60, 80, 90])
-                self.consequent['extreme'] = fuzz.trapmf(self.consequent.universe, [80, 90, 100, 100])
 
                 self.rules.append(fuzz.control.Rule(
                     (self.antecedents['sst']['ideal_1'] & self.antecedents['sla']['ideal_1'] & self.antecedents['depth']['ideal']) |
@@ -109,7 +108,84 @@ class Fuzzifier:
                     (self.antecedents['sst']['high'] & self.antecedents['sla']['ideal_2'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])
                     , self.consequent['low']))
+            
+            elif season is Season.EarlyAutumn:
+                self.usedParameters = ['depth', 'sst', 'sla', 'chl']
+                
+                self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 10), 'depth')
+                self.antecedents['sst'] = fuzz.control.Antecedent(np.linspace(280, 310, 10), 'sst')
+                self.antecedents['sla'] = fuzz.control.Antecedent(np.linspace(-1, 1, 10), 'sla')
+                self.antecedents['chl'] = fuzz.control. Antecedent(np.linspace(0, 30, 10), 'chl')
+                
+                self.antecedents['depth']['deep'] = fuzz.trapmf(self.antecedents['depth'].universe, [-5000, -5000, -360, -180])
+                self.antecedents['depth']['ideal'] = fuzz.trapmf(self.antecedents['depth'].universe, [-360, -180, 0, 0])
 
+                self.antecedents['sst']['low'] = fuzz.trapmf(self.antecedents['sst'].universe, [280, 280, 288, 290])
+                self.antecedents['sst']['ideal'] = fuzz.trapmf(self.antecedents['sst'].universe, [288, 290, 292, 294])
+                self.antecedents['sst']['high'] = fuzz.trapmf(self.antecedents['sst'].universe, [292, 294, 310, 310])
+
+                self.antecedents['sla']['low'] = fuzz.trapmf(self.antecedents['sla'].universe, [-1, -1, 0.03, 0.05])
+                self.antecedents['sla']['ideal'] = fuzz.trapmf(self.antecedents['sla'].universe, [0.03, 0.05, 0.12, 0.14])
+                self.antecedents['sla']['high'] = fuzz.trapmf(self.antecedents['sla'].universe, [0.12, 0.14, 1, 1])
+
+                self.antecedents['chl']['low'] = fuzz.trapmf(self.antecedents['sla'].universe, [-1, -1, 0.03, 0.05])
+                self.antecedents['chl']['ideal'] = fuzz.trapmf(self.antecedents['sla'].universe, [0.03, 0.05, 0.12, 0.14])
+                self.antecedents['chl']['high'] = fuzz.trapmf(self.antecedents['sla'].universe, [0.12, 0.14, 1, 1])
+
+                self.rules.append(fuzz.control.Rule(
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal'])
+                    , self.consequent['extreme']))
+                self.rules.append(fuzz.control.Rule(
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep'])
+                    , self.consequent['high']))
+                self.rules.append(fuzz.control.Rule(
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])
+                    , self.consequent['medium']))
+                self.ruls.append(fuzz.control.Rule(
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['low'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['low'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['ideal']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['low'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['sla']['ideal'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['high'] & self.antecedents['sst']['ideal'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['low'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
+                    (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])
+                    , self.consequent['low']))
     def run(self, verbose=True):
         system = fuzz.control.ControlSystem(self.rules)
         simulation = fuzz.control.ControlSystemSimulation(system)
@@ -127,24 +203,6 @@ class Fuzzifier:
                         simulation.input[param] = value
                     simulation.compute()
                     self.results.itemset((x, y), simulation.output[self.outputParameter])
-                '''
-                for param in self.usedParameters:
-                    data[param] = self.data['param'].item(x, y)
-                #chl = self.chl_data.item(x, y)
-                sst = self.sst_data.item(x, y)
-                sla = self.sla_data.item(x, y)
-                depth = self.depth_data.item(x, y)
-                if np.isnan(sst) or np.isnan(sla) or np.isnan(depth):
-                    self.anchovy_data.itemset((x, y), -999)
-                else:
-                    #simulation.input['chl'] = chl
-                    simulation.input['sst'] = sst
-                    simulation.input['sla'] = sla
-                    simulation.input['depth'] = depth
-                    simulation.compute()
-                    output = simulation.output['anchovy']
-                    self.anchovy_data.itemset((x, y), output)
-                '''
 
     def writeData(self):
         outputFile = '{0}.nc'.format(self.outputParameter)
