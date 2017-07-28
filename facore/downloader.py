@@ -6,8 +6,7 @@ import sys
 import datetime as dt
 
 class Downloader:
-    def __init__(self, workspace, motupath, username, password):
-        self.workspace = workspace
+    def __init__(self, motupath, username, password):
         self.motuPath = motupath
         self.username = username
         self.password = password
@@ -17,17 +16,14 @@ class Downloader:
         self.variables = {'CHL': ['CHL'], 'SST': ['analysed_sst', 'analysis_error'], 'SLA': ['sla']}
         self.geo = {'CHL': '-x -6 -X 36.500480651855 -y 30 -Y 45.998546600342', 'SST': '-x -18.120832443237 -X 36.245834350586 -y 30.254167556763 -Y 45.995834350586', 'SLA': '-x -5.9375 -X 36.9375 -y 30.0625 -Y 45.9375'}
 
-    def _prepareCmd(self, parameter, date, directory, filename):
-        print directory, filename
+    def _prepareCmd(self, directory, filename, parameter, date):
         variables = ''
         for v in self.variables[parameter]:
             variables += '-v {0} '.format(v)
         cmd = 'python {0} -u {1} -p {2} -m {3} -s {4} -d {5} {6} -t "{7}" -T "{8}" {9} -o {10} -f {11}.nc'.format(self.motuPath, self.username, self.password, self.urls[parameter], self.services[parameter], self.products[parameter], self.geo[parameter], date, date, variables, directory, filename)
         return cmd
 
-    def download(self, parameter, date, verbose=False, force_copy=False):
-        directory = '{0}/{1}/'.format(self.workspace, date)
-        filename = '{0}'.format(parameter)  
+    def download(self, directory, filename, parameter, date, verbose=False, force_copy=False):
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -36,7 +32,7 @@ class Downloader:
                 print '{0} has already been downloaded. Skipping...'.format(parameter)
             return True;
         
-        cmd = self._prepareCmd(parameter, date, directory, filename)
+        cmd = self._prepareCmd(directory, filename, parameter, date)
         
         if verbose is True:
             print 'Downloading {0}...'.format(parameter)
@@ -45,6 +41,7 @@ class Downloader:
         while True:
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             returncode = p.wait()
+            print returncode
             if returncode == 0:
                 if verbose is True:
                     print '{0} downloaded successfully'.format(parameter)
@@ -59,7 +56,7 @@ class Downloader:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download SST, SLA and CHL L4 daily data for Mediterranean Sea.')
-    parser.add_argument('-w', '--workspace', default='.', help='workspace directory')
+    parser.add_argument('-d', '--directory', default='.', help='directory to download parameters')
     parser.add_argument('-m', '--motupath', help='the path to motu client')
     parser.add_argument('-u', '--username', help='CMEMS username')
     parser.add_argument('-x', '--password', help='CMEMS password')
@@ -69,8 +66,8 @@ if __name__ == '__main__':
     parser.add_argument("-f", "--force-copy", help="force copy if file exists", action="store_true")
     args = parser.parse_args()
 
-    if not os.path.exists(args.workspace):
-        os.makedirs(args.workspace)
+    if not os.path.exists(args.directory):
+        os.makedirs(args.directory)
 
     if (args.date == 'today'):
         date = dt.date.today().isoformat()
@@ -88,15 +85,15 @@ if __name__ == '__main__':
     if args.force_copy:
         force_copy = True
 
-    downloader = Downloader(args.workspace, args.motupath, args.username, args.password)
+    downloader = Downloader(args.motupath, args.username, args.password)
 
     if args.parameters == 'CHL':
-        downloader.download('CHL', date, verbose, force_copy)
+        downloader.download(args.directory, 'CHL.nc', 'CHL', date, verbose, force_copy)
     elif args.parameters == 'SST':
-        downloader.download('SST', date, verbose, force_copy)
+        downloader.download(args.directory, 'SST.nc', 'SST', date, verbose, force_copy)
     elif args.parameters == 'SLA':
-        downloader.download('SLA', date, verbose, force_copy)
+        downloader.download(args.directory, 'SLA.nc', 'SLA', date, verbose, force_copy)
     elif args.parameters == 'ALL':
-        downloader.download('CHL', date, verbose, force_copy)
-        downloader.download('SST', date, verbose, force_copy)
-        downloader.download('SLA', date, verbose, force_copy)
+        downloader.download(args.directory, 'CHL.nc', 'CHL', date, verbose, force_copy)
+        downloader.download(args.directory, 'SST.nc', 'SST', date, verbose, force_copy)
+        downloader.download(args.directory, 'SLA.nc', 'SLA', date, verbose, force_copy)
