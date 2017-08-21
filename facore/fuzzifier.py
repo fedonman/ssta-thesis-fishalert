@@ -14,6 +14,7 @@ class Season(Enum):
     EarlyAutumn = 2
     LateAutumn = 3
     Winter = 4
+    Spring = 5
 
 class Fishery(Enum):
     Anchovy = 1
@@ -48,7 +49,7 @@ class Fuzzifier:
         self.rules = list()
         if fishery is Fishery.Anchovy:
             self.outputParameter = 'anchovy'
-            self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), 'anchovy')
+            self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), self.outputParameter)
             self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
             self.consequent['medium'] = fuzz.trapmf(self.consequent.universe, [20, 30, 50, 60])
             self.consequent['high'] = fuzz.trapmf(self.consequent.universe, [50, 60, 80, 90])

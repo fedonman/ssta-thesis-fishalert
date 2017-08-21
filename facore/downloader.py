@@ -20,7 +20,7 @@ class Downloader:
         variables = ''
         for v in self.variables[parameter]:
             variables += '-v {0} '.format(v)
-        cmd = 'python {0} -u {1} -p {2} -m {3} -s {4} -d {5} {6} -t "{7}" -T "{8}" {9} -o {10} -f {11}.nc'.format(self.motuPath, self.username, self.password, self.urls[parameter], self.services[parameter], self.products[parameter], self.geo[parameter], date, date, variables, directory, filename)
+        cmd = 'python {0} -u {1} -p {2} -m {3} -s {4} -d {5} {6} -t "{7}" -T "{8}" {9} -o {10} -f {11}'.format(self.motuPath, self.username, self.password, self.urls[parameter], self.services[parameter], self.products[parameter], self.geo[parameter], date, date, variables, directory, filename)
         return cmd
 
     def download(self, directory, filename, parameter, date, verbose=False, force_copy=False):
