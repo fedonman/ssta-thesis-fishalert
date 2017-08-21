@@ -25,25 +25,24 @@ class Collocator:
 
     def readProduct(self, file):
         import snappy
+        # input parameter is already a SNAP product
         if self.isSNAPproduct(file):
-            # input parameter is already a SNAP product
             return file
+        # input parameter is file, then convert it to SNAP product
         if os.path.isfile(file):
             prod = snappy.ProductIO.readProduct(file)
         elif os.path.exists(file):
-            print('ERROR 1')
             prod = None
         else:
-            print('ERROR 2')
             prod = None
         return prod
 
     def Collocate(self, masterFile, slaveFile, targetFile, verbose=True):
         import snappy
-        # read master and slave products
         if verbose is True:
             print 'Collocating {0} into {1}'.format(slaveFile, masterFile) 
         
+        # read master and slave products
         masterProduct = self.readProduct(masterFile)
         slaveProduct = self.readProduct(slaveFile)
 
@@ -73,5 +72,8 @@ class Collocator:
         del CollocateOp
         del ResamplingType
         
+        if verbose is True:
+            print 'Collocation successful.'
+
         # return target filename
         return targetFile

@@ -9,24 +9,14 @@ import skfuzzy as fuzz
 from skfuzzy import control as control
 from enum import Enum
 
-class Season(Enum):
-    Summer = 1
-    EarlyAutumn = 2
-    LateAutumn = 3
-    Winter = 4
-    Spring = 5
-
 class Fishery(Enum):
     Anchovy = 1
     Sardine = 2
 
 class Fuzzifier:
-    def __init__(self, file, season, fishery):
+    def __init__(self, file):
         self.file = file
-        self.season = season
-        self.fishery = fishery
         self.setData(file)
-        self.setFuzzyRules(season, fishery)
 
     def setData(self, file):
         self.data = {}
@@ -43,6 +33,8 @@ class Fuzzifier:
         data.close()
 
     def setFuzzyRules(self, season, fishery):
+        self.season = season
+        self.fishery = fishery
         self.usedParameters = []
         self.antecedents = {}
         self.consequent = None
@@ -54,7 +46,7 @@ class Fuzzifier:
             self.consequent['medium'] = fuzz.trapmf(self.consequent.universe, [20, 30, 50, 60])
             self.consequent['high'] = fuzz.trapmf(self.consequent.universe, [50, 60, 80, 90])
             self.consequent['extreme'] = fuzz.trapmf(self.consequent.universe, [80, 90, 100, 100])
-            if season is Season.Summer:
+            if season == 'Summer':
                 self.usedParameters = ['depth', 'sst', 'sla']
                 
                 self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
@@ -114,7 +106,7 @@ class Fuzzifier:
                     (self.antecedents['sla']['high'] & self.antecedents['sst']['low'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['sla']['high'] & self.antecedents['sst']['high'] & self.antecedents['depth']['deep'])    
                 , self.consequent['low']))
-            elif season is Season.EarlyAutumn:
+            elif season == 'Early Autumn':
                 self.usedParameters = ['depth', 'sla', 'chl']
 
                 self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
@@ -158,7 +150,7 @@ class Fuzzifier:
                     (self.antecedents['chl']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['chl']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])    
                 , self.consequent['low']))
-            elif season is Season.LateAutumn:
+            elif season == 'Late Autumn':
                 self.usedParameters = ['depth', 'sst', 'sla', 'chl']
                 
                 self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
@@ -235,7 +227,7 @@ class Fuzzifier:
                     (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['low'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])
                     , self.consequent['low']))
-            elif season is Season.Winter:
+            elif season == 'Winter':
                 self.usedParameters = ['depth', 'sst', 'sla', 'chl']
                 
                 self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
@@ -280,11 +272,40 @@ class Fuzzifier:
                     (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['depth']['deep'])    
                 , self.consequent['low']))
+        elif fishery is Fishery.Sardine:
+            self.outputParameter = 'sardine'
+            self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), self.outputParameter)
+            self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
+            self.consequent['medium'] = fuzz.trapmf(self.consequent.universe, [20, 30, 50, 60])
+            self.consequent['high'] = fuzz.trapmf(self.consequent.universe, [50, 60, 80, 90])
+            self.consequent['extreme'] = fuzz.trapmf(self.consequent.universe, [80, 90, 100, 100])
+            if season == 'June':
+                self.usedParameters = ['depth', 'sst', 'sla']
+                
+                self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
+                self.antecedents['sst'] = fuzz.control.Antecedent(np.linspace(273, 310, 37), 'sst')
+                self.antecedents['sla'] = fuzz.control.Antecedent(np.linspace(-1, 1, 20), 'sla')
+                
+                self.antecedents['depth']['deep'] = fuzz.trapmf(self.antecedents['depth'].universe, [-5000, -5000, -200, -100])
+                self.antecedents['depth']['ideal'] = fuzz.trapmf(self.antecedents['depth'].universe, [-200, -100, 0, 0])
+
+                self.antecedents['sst']['low'] = fuzz.trapmf(self.antecedents['sst'].universe, [273, 273, 285, 290])
+                self.antecedents['sst']['ideal_1'] = fuzz.trapmf(self.antecedents['sst'].universe, [285, 290, 295, 297])
+                self.antecedents['sst']['ideal_2'] = fuzz.trapmf(self.antecedents['sst'].universe, [295, 297, 298, 300])
+                self.antecedents['sst']['high'] = fuzz.trapmf(self.antecedents['sst'].universe, [298, 300, 310, 310])
+
+                self.antecedents['sla']['low'] = fuzz.trapmf(self.antecedents['sla'].universe, [-1, -1, -0.14, -0.12])
+                self.antecedents['sla']['ideal_1'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.14, -0.12, -0.06, -0.04])
+                self.antecedents['sla']['ideal_2'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.08, -0.06, -0.02, 0])
+                self.antecedents['sla']['high'] = fuzz.trapmf(self.antecedents['sla'].universe, [-0.02, 0, 1, 1])
             
-    def run(self, verbose=True):
+    def run(self, season, fishery, verbose=True):
+        self.setFuzzyRules(season, fishery)
         system = fuzz.control.ControlSystem(self.rules)
         simulation = fuzz.control.ControlSystemSimulation(system)
         self.results = np.zeros((self.X, self.Y))
+        if verbose is True:
+            print 'Generating PFZ...'
         for x in range(self.X):
             if verbose is True:
                 sys.stdout.write('Progress: {:2.1%}\r'.format((x * self.Y) / self.PixelCount))
@@ -298,11 +319,14 @@ class Fuzzifier:
                         simulation.input[param] = value
                     simulation.compute()
                     self.results.itemset((x, y), simulation.output[self.outputParameter])
+        if verbose is True:
+            print 'PFZ generated successfully.'
 
-    def writeData(self, filename):
-        outputFile = '{0}.nc'.format(filename)
+    def writeData(self, filename, verbose=True):
+        if verbose is True:
+            print 'Writing data to {0}...'.format(filename)
         dsin = cdf.Dataset(self.file)
-        dsout = cdf.Dataset(outputFile, 'w')
+        dsout = cdf.Dataset(filename, 'w')
         for dname, the_dim in dsin.dimensions.items():
             dsout.createDimension(dname, len(the_dim))
         for v_name, varin in dsin.variables.items():
@@ -318,6 +342,8 @@ class Fuzzifier:
         var[:] = self.results[:]
         dsin.close()
         dsout.close()
+        if verbose is True:
+            print 'Data written successfully.'
 
     def ViewMembershipRelationships(self):
         system = fuzz.control.ControlSystem(self.rules)

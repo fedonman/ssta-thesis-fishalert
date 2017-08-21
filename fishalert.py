@@ -7,29 +7,46 @@ import argparse
 import time
 from shutil import copy
 
-def date_to_season(date):
+def date_to_season(date, fishery):
     year, month, day = date.split('-')
     month = int(month)
     day = int(day)
-    if month == 12 or month == 1 or month == 2:
-        return Season.Winter
-    elif month == 3 or month == 4 or month == 5:
-        return Season.Spring
-    elif month == 6 or month == 7 or month == 8:
-        return Season.Summer
-    elif month == 9 or (month == 10 and day < 15):
-        return Season.EarlyAutumn
-    elif (month == 10 and day >= 15) or month == 11:
-        return Season.LateAutumn
+    if fishery == Fishery.Anchovy:
+        if month == 12 or month == 1 or month == 2:
+            return 'Winter'
+        elif month == 3 or month == 4 or month == 5:
+            return None
+        elif month == 6 or month == 7 or month == 8:
+            return 'Summer'
+        elif month == 9 or (month == 10 and day < 15):
+            return 'Early Autumn'
+        elif (month == 10 and day >= 15) or month == 11:
+            return 'Late Autumn'
+    elif fishery == Fishery.Sardine:
+        if month == 5 or month == 6 or month == 7:
+            return 'June'
+        elif month == 8 or month == 9 or month == 10:
+            return 'September'
+        elif month == 11 or month == 12 or month == 1:
+            return 'December'
+        else:
+            return None
+
+def get_fishery_filename(fishery):
+    filenames = {
+        Fishery.Anchovy: 'Anchovy.nc',
+        Fishery.Sardine: 'Sardine.nc'
+    }
+    return filenames[fishery]
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate Possible Fishing Zones in the Mediterranean Sea.')
     parser.add_argument('-f', '--fishery', choices=['ALL', 'Anchovy', 'Sardine'], default='Anchovy', help='fishery')
     parser.add_argument('-d', '--date', default='today', help='a date')
     parser.add_argument('-v', '--verbose', help='enable verbose mode', action='store_true')
+    parser.add_argument('-e', '--erase-files', help='erase temporary files', action='store_true')
     parser.add_argument('-p', '--previous-day', help='calculate PFZ for previous date if not all data are available', action='store_true')
     args = parser.parse_args()
-
 
     if args.date == 'today':
         date = '{0}'.format(datetime.date.today().isoformat())
@@ -58,6 +75,10 @@ if __name__ == '__main__':
     if args.previous_day:
         download_previous_day = True
 
+    erase_files = False
+    if args.erase_files:
+        erase_files = True
+
     settings = config.settings
     fish_alert_directory = os.path.dirname(os.path.abspath(__file__))
     workspace_directory = config.settings['workspace']
@@ -82,36 +103,25 @@ if __name__ == '__main__':
             copy('{0}/assets/bathymetry.nc'.format(fish_alert_directory), '.')
         else:
             sys.exit('Bathymetry file not available. Should be in assets/bathymetry.nc')
-
-    if os.path.isfile('{0}.nc'.format(args.fishery)):
-        print 'PFZ is already calculated for {0}.'.format(args.fishery)
-        sys.exit()
     
-    downloader = Downloader(motu_path, username, password)
+    depth_file = 'bathymetry.nc'
     chl_file = 'CHL.nc'
     sst_file = 'SST.nc'
     sla_file = 'SLA.nc'
+    temp1_file = '_temp1.nc'
+    temp2_file = '_temp2.nc'
+    final_file = 'final.nc'
 
+    downloader = Downloader(motu_path, username, password)
     if not os.path.isfile(chl_file):
-        print chl_file
-        downloader.download(current_date_directory, 'CHL.nc', 'CHL', date, True)
+        downloader.download(current_date_directory, chl_file, 'CHL', date, True)
     if not os.path.isfile(sst_file):
-        print sst_file
-        downloader.download(current_date_directory, 'SST.nc', 'SST', date, True)
+        downloader.download(current_date_directory, sst_file, 'SST', date, True)
     if not os.path.isfile(sla_file):
-        print sla_file
-        downloader.download(current_date_directory, 'SLA.nc', 'SLA', date, True)
-
-    print os.path.isfile(chl_file)
-    print os.path.isfile(sst_file)
-    print os.path.isfile(sla_file)
+        downloader.download(current_date_directory, sla_file, 'SLA', date, True)
     
+    # All environmental data are available
     if os.path.isfile(chl_file) and os.path.isfile(sst_file) and os.path.isfile(sla_file):
-        temp1_file = '_temp1.nc'
-        temp2_file = '_temp2.nc'
-        final_file = 'final.nc'
-        depth_file = 'bathymetry.nc'
-        
         collocator = Collocator(snappy_path)
         if not os.path.isfile(temp1_file):
             collocator.Collocate(depth_file, sst_file, temp1_file)
@@ -126,13 +136,37 @@ if __name__ == '__main__':
             Utilities.deleteCollocationFlags(final_file)
             time.sleep(1)
 
+        fuzzifier = Fuzzifier(final_file)
         for fish in fishery:
-            print fish
-            print season
-            fuzzifier = Fuzzifier(final_file, season, fish)
-            fuzzifier.run()
-            fuzzifier.writeData('{0}.nc'.format(fish))
-    '''else:
+            fuzzifier.run(season, fish)
+            fuzzifier.writeData(get_fishery_filename(fish))
+    
+    # Not all environmental data are available
+    else:
+        if verbose is True:
+            print 'Not all environmental data are available for {0}. PFZ generation is not possible.'.format(date)
+    
+    # Delete temporary files if flag is set
+    if erase_files is True:
+        if verbose is True:
+            print 'Deleting temporary files...'
+        if os.path.isfile(chl_file):
+            os.remove(chl_file)
+        if os.path.isfile(sst_file):
+            os.remove(sst_file)
+        if os.path.isfile(sla_file):
+            os.remove(sla_file)
+        if os.path.isfile(depth_file):
+            os.remove(depth_file)
+        if os.path.isfile(temp1_file):
+            os.remove(temp1_file)
+        if os.path.isfile(temp2_file):
+            os.remove(temp2_file)
+        if os.path.isfile(final_file):
+            os.remove(final_file)
+        if verbose is True:
+            print 'Temporary files deleted.'
+'''else:
         if download_previous_day:
             previous_date = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
             if verbose:
