@@ -55,8 +55,6 @@ if __name__ == '__main__':
             date = '{0}'.format(datetime.datetime.strptime(args.date, '%Y-%m-%d').date())
         except ValueError:
             sys.exit('Incorrect date, should be YYYY-MM-DD or today (default)')
-    
-    season = date_to_season(date)
 
     fishery = list()
     if args.fishery == 'Anchovy':
@@ -138,8 +136,13 @@ if __name__ == '__main__':
 
         fuzzifier = Fuzzifier(final_file)
         for fish in fishery:
-            fuzzifier.run(season, fish)
-            fuzzifier.writeData(get_fishery_filename(fish))
+            season = date_to_season(date, fish)
+            if season is not None:
+                fuzzifier.run(season, fish)
+                fuzzifier.writeData(get_fishery_filename(fish))
+            else:
+                if verbose is True:
+                    print 'PFZ rules not available for {0} on {1}'.format(fish, date)
     
     # Not all environmental data are available
     else:
