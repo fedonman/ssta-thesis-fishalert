@@ -41,7 +41,6 @@ class Downloader:
         while True:
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             returncode = p.wait()
-            print returncode
             if returncode == 0:
                 if verbose is True:
                     print '{0} downloaded successfully'.format(parameter)
