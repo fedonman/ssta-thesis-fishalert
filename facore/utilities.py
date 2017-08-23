@@ -13,7 +13,7 @@ class Utilities:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Utility functions needed in the generation of PFZs')
     group = parser.add_mutually_exclusive_group(required=True)
-    group.add_argument('-d', '--deleteCollocationFlags', type=str, help='Remove collocation flags from file by creating a new file.')
+    group.add_argument('-d', '--deleteCollocationFlags', type=str, help='Remove collocation flags from file (actually just rename the variable).')
     args = parser.parse_args()
 
     if args.deleteCollocationFlags is not None:

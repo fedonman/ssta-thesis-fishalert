@@ -58,7 +58,7 @@ class Collocator:
     def Collocate(self, masterFile, slaveFile, targetFile, verbose=True):
         import snappy
         if verbose is True:
-            print 'Collocating {0} into {1}'.format(slaveFile, masterFile) 
+            print 'Collocating {0} and {1} into {2}'.format(slaveFile, masterFile, targetFile) 
         
         # Supress stdout because snappy raises warnings
         with suppress_stdout_stderr():
