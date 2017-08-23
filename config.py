@@ -1,3 +1,4 @@
+# Change these settings based on your setup
 settings = dict(
     motu_path = '/home/fedonman/git/motu-client-python/src/python/motu-client.py',
     cmems_username = 'vvasileiadis',

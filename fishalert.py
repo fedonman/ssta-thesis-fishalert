@@ -11,7 +11,7 @@ def date_to_season(date, fishery):
     year, month, day = date.split('-')
     month = int(month)
     day = int(day)
-    if fishery == Fishery.Anchovy:
+    if fishery == 'Anchovy':
         if month == 12 or month == 1 or month == 2:
             return 'Winter'
         elif month == 3 or month == 4 or month == 5:
@@ -22,7 +22,7 @@ def date_to_season(date, fishery):
             return 'Early Autumn'
         elif (month == 10 and day >= 15) or month == 11:
             return 'Late Autumn'
-    elif fishery == Fishery.Sardine:
+    elif fishery == 'Sardine':
         if month == 5 or month == 6 or month == 7:
             return 'June'
         elif month == 8 or month == 9 or month == 10:
@@ -31,13 +31,8 @@ def date_to_season(date, fishery):
             return 'December'
         else:
             return None
-
-def get_fishery_filename(fishery):
-    filenames = {
-        Fishery.Anchovy: 'Anchovy.nc',
-        Fishery.Sardine: 'Sardine.nc'
-    }
-    return filenames[fishery]
+    else:
+        return None
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate Possible Fishing Zones in the Mediterranean Sea.')
@@ -58,12 +53,12 @@ if __name__ == '__main__':
 
     fishery = list()
     if args.fishery == 'Anchovy':
-        fishery.append(Fishery.Anchovy)
+        fishery.append('Anchovy')
     elif args.fishery == 'Sardine':
-        fishery.append(Fishery.Sardine)
+        fishery.append('Sardine')
     elif args.fishery == 'ALL':
-        fishery.append(Fishery.Anchovy)
-        fishery.append(Fishery.Sardine)
+        fishery.append('Anchovy')
+        fishery.append('Sardine')
 
     verbose = False
     if args.verbose:
@@ -120,6 +115,7 @@ if __name__ == '__main__':
     
     # All environmental data are available
     if os.path.isfile(chl_file) and os.path.isfile(sst_file) and os.path.isfile(sla_file):
+        # Collocate files into one
         collocator = Collocator(snappy_path)
         if not os.path.isfile(temp1_file):
             collocator.Collocate(depth_file, sst_file, temp1_file)
@@ -133,16 +129,25 @@ if __name__ == '__main__':
             collocator.Collocate(temp2_file, sla_file, final_file)
             Utilities.deleteCollocationFlags(final_file)
             time.sleep(1)
-
+        
+        # Create Fuzzifier using the collocated environmental data
         fuzzifier = Fuzzifier(final_file)
+        # For each fishery
         for fish in fishery:
+            # find the corresponding season
             season = date_to_season(date, fish)
             if season is not None:
+                if os.path.isfile('{0}.nc'.format(fish)):
+                    if verbose is True:
+                        print 'PFZ for {0} on {1} already exists. Skipping...'.format(fish, date)
+                    continue
+                # run the fuzzification process
                 fuzzifier.run(season, fish)
-                fuzzifier.writeData(get_fishery_filename(fish))
+                # write the results to file
+                fuzzifier.writeData('{0}.nc'.format(fish))
             else:
                 if verbose is True:
-                    print 'PFZ rules not available for {0} on {1}'.format(fish, date)
+                    print 'PFZ rules for {0} not available on {1}'.format(fish, date)
     
     # Not all environmental data are available
     else:
@@ -169,7 +174,10 @@ if __name__ == '__main__':
             os.remove(final_file)
         if verbose is True:
             print 'Temporary files deleted.'
-'''else:
+
+''' 
+TODO
+else:
         if download_previous_day:
             previous_date = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
             if verbose:
@@ -211,4 +219,5 @@ if __name__ == '__main__':
 
                 fuzzifier = Fuzzifier(final_file, Season.Summer, Fishery.Anchovy)
                 fuzzifier.run()
-                fuzzifier.writeData('{0}.nc'.format(previous_date))'''
+                fuzzifier.writeData('{0}.nc'.format(previous_date))
+'''

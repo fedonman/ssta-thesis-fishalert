@@ -9,9 +9,16 @@ import skfuzzy as fuzz
 from skfuzzy import control as control
 from enum import Enum
 
-class Fishery(Enum):
-    Anchovy = 1
-    Sardine = 2
+Fishery = {
+    'Anchovy': {
+        'Seasons': ['Summer', 'Early Autumn', 'Late Autumn', 'Winter'],
+        'Output File': 'Anchovy.nc'
+    },
+    'Sardine': {
+        'Seasons': ['June', 'September', 'December'],
+        'Output File': 'Sardine.nc'
+    }
+}
 
 class Fuzzifier:
     def __init__(self, file):
@@ -39,7 +46,7 @@ class Fuzzifier:
         self.antecedents = {}
         self.consequent = None
         self.rules = list()
-        if fishery is Fishery.Anchovy:
+        if fishery == 'Anchovy':
             self.outputParameter = 'anchovy'
             self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), self.outputParameter)
             self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
@@ -272,7 +279,7 @@ class Fuzzifier:
                     (self.antecedents['chl']['high'] & self.antecedents['sst']['low'] & self.antecedents['depth']['deep']) |
                     (self.antecedents['chl']['high'] & self.antecedents['sst']['high'] & self.antecedents['depth']['deep'])    
                 , self.consequent['low']))
-        elif fishery is Fishery.Sardine:
+        elif fishery == 'Sardine':
             self.outputParameter = 'sardine'
             self.consequent = fuzz.control.Consequent(np.linspace(0, 100, 10), self.outputParameter)
             self.consequent['low'] = fuzz.trapmf(self.consequent.universe, [0, 0, 20, 30])
@@ -546,7 +553,7 @@ class Fuzzifier:
 
     def writeData(self, filename, verbose=True):
         if verbose is True:
-            print 'Writing data to {0}...'.format(filename)
+            print 'Writing data to {0}'.format(filename)
         dsin = cdf.Dataset(self.file)
         dsout = cdf.Dataset(filename, 'w')
         for dname, the_dim in dsin.dimensions.items():
@@ -559,13 +566,13 @@ class Fuzzifier:
         
         var = dsout.createVariable(self.outputParameter, np.dtype('float32'), ('lat', 'lon'), fill_value=-999, zlib=True, least_significant_digit=1)
         var.units = '%'
-        var.long_name = 'Possibility of Fishing Zone'
+        var.long_name = 'Possibility of {0} Fishing Zone'.format(self.fishery)
         var.valid_range = np.array((0.0, 100.0))
         var[:] = self.results[:]
         dsin.close()
         dsout.close()
         if verbose is True:
-            print 'Data written successfully.'
+            print 'Data written successfully'
 
     def ViewMembershipRelationships(self):
         system = fuzz.control.ControlSystem(self.rules)
@@ -611,6 +618,7 @@ class Fuzzifier:
         plt.show()
 
 '''
+TODO
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fuzzy algorithm for detecting PFZs in Mediterranean Sea')
     parser.add_argument('-f', '--file', help='path to collocated file')
