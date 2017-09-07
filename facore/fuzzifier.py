@@ -235,11 +235,10 @@ class Fuzzifier:
                     (self.antecedents['chl']['ideal'] & self.antecedents['sst']['high'] & self.antecedents['sla']['high'] & self.antecedents['depth']['deep'])
                     , self.consequent['low']))
             elif season == 'Winter':
-                self.usedParameters = ['depth', 'sst', 'sla', 'chl']
+                self.usedParameters = ['depth', 'sst', 'chl']
                 
                 self.antecedents['depth'] = fuzz.control.Antecedent(np.linspace(-5000, 0, 100), 'depth')
                 self.antecedents['sst'] = fuzz.control.Antecedent(np.linspace(273, 310, 37), 'sst')
-                self.antecedents['sla'] = fuzz.control.Antecedent(np.linspace(-1, 1, 20), 'sla')
                 self.antecedents['chl'] = fuzz.control.Antecedent(np.linspace(0, 30, 30), 'chl')
                 
                 self.antecedents['depth']['deep'] = fuzz.trapmf(self.antecedents['depth'].universe, [-5000, -5000, -120, -60])
@@ -574,25 +573,33 @@ class Fuzzifier:
         if verbose is True:
             print 'Data written successfully'
 
-    def ViewMembershipRelationships(self):
+    def ViewMembershipRelationships(self, season, fishery):
+        self.setFuzzyRules(season, fishery)
         system = fuzz.control.ControlSystem(self.rules)
         simulation = fuzz.control.ControlSystemSimulation(system)
-        sst = np.linspace(273, 310, 38)
+        sst = np.linspace(273, 310, 100)
         #sla = np.linspace(-1, 1, 21)
-        chl = np.linspace(0, 20, 21)
+        chl = np.linspace(0, 15, 100)
         x, y = np.meshgrid(sst, chl)
         z = np.zeros_like(x)
 
+        vmin = 100
+        vmax = 0
         # Loop through the system 21*21 times to collect the control surface
         for i in range(len(chl) - 1):
             for j in range(len(sst) - 1):
                 simulation.input['sst'] = x[i, j]
                 simulation.input['chl'] = y[i, j]
-                simulation.input['depth'] = -1000
+                simulation.input['depth'] = -30
                 #print('{0}, {1}'.format(x[i,j], y[i,j]))
                 simulation.compute()
                 z[i, j] = simulation.output['anchovy']
-                self.consequent.view(sim=simulation)
+                if z[i, j] >= vmax:
+                    vmax = z[i, j]
+                if z[i, j] <= vmin:
+                    vmin = z[i, j]
+                #self.consequent.view(sim=simulation)
+        print '{0} - {1}'.format(vmin, vmax)
 
         # Plot the result in pretty 3D with alpha blending
         import matplotlib.pyplot as plt
@@ -608,6 +615,9 @@ class Fuzzifier:
         cset = ax.contourf(x, y, z, zdir='x', offset=3, cmap='viridis', alpha=0.5)
         cset = ax.contourf(x, y, z, zdir='y', offset=3, cmap='viridis', alpha=0.5)
 
+        ax.set_xlabel('SST')
+        ax.set_ylabel('CHL')
+        ax.set_zlabel('PFZ')
         ax.view_init(30, 200)
         plt.show()
 
@@ -617,30 +627,30 @@ class Fuzzifier:
         fig = plt.figure(figsize=(8, 8))
         plt.show()
 
-'''
-TODO
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fuzzy algorithm for detecting PFZs in Mediterranean Sea')
-    parser.add_argument('-f', '--file', help='path to collocated file')
+    parser.add_argument('-i', '--input', help='path to input file')
+    parser.add_argument('-o', '--output', help='path to output file')
+    parser.add_argument('-s', '--season', help='the season')
+    parser.add_argument('-f', '--fishery', help='the fishery')
     parser.add_argument("-v", "--verbose", help="enable verbose mode", action="store_true")
     args = parser.parse_args()
 
     if args.verbose:
         print 'Initializing fuzzifier...'
 
-    fuzzifier = Fuzzifier(args.file)
+    fuzzifier = Fuzzifier(args.input)
 
     if args.verbose:
         print 'Running fuzzy algorithm...'
     
-    fuzzifier.run()
+    fuzzifier.run(args.season, args.fishery)
 
     if args.verbose:
         print 'Fuzzy algorithm completed...'
-        print 'Writing results to {0}...'.format(args.file)
+        print 'Writing results to {0}...'.format(args.output)
 
     fuzzifier.writeData()
 
     if args.verbose:
         print 'PFZ generation completed!'
-'''
